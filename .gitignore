@@ -1,0 +1,10 @@
+**/__pycache__/
+
+# Installer logs
+src/pip-log.txt
+src/pip-delete-this-directory.txt
+
+# Miscellaneous
+**/.vs
+**/.vscode
+**/.DS_Store
