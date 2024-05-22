@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 requirements = ""
-with open("PyIssues/requirements.txt", "r", encoding="utf-8") as fh:
+with open("PyBugReporter/requirements.txt", "r", encoding="utf-8") as fh:
     requirements = fh.read()
 
 requirements = requirements.split("\n")
@@ -22,22 +22,22 @@ def listFolders(directory):
         folders.extend(folder)
     return folders
 
-folderPath = "PyIssues"
+folderPath = "PyBugReporter"
 folders = listFolders(folderPath)
-folders.append("PyIssues")
+folders.append("PyBugReporter")
 print(folders)
 
 setuptools.setup(
-    name='PyIssues',
+    name='PyBugReporter',
     version=version,
     author='Record Linking Lab',
     author_email='recordlinkinglab@gmail.com',
     description='A python library for catching thrown exceptions and automatically creating issues on a GitHub repo.',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='https://github.com/byuawsfhtl/PyIssues.git',
+    url='https://github.com/byuawsfhtl/PyBugReporter.git',
     project_urls = {
-        "Bug Tracker": "https://github.com/byuawsfhtl/PyIssues/issues"
+        "Bug Tracker": "https://github.com/byuawsfhtl/PyBugReporter/issues"
     },
     packages=folders,
     install_requires=requirements,
