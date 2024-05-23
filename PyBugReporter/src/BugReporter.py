@@ -29,7 +29,7 @@ class BugReporter:
         self.orgName = orgName
         self.test = test
 
-    def bugReporter(self) -> callable:
+    def report(self) -> callable:
         """Decorator that catches exceptions and sends a bug report to the github repository.
 
         Returns:
@@ -188,16 +188,16 @@ class BugReporter:
 
         # query variables
         getID = """
-            query {
-                repository(owner: $orgName, name: $repoName) {
+            query getID($owner: String!, $name: String!) {
+                repository(owner: $owner, name: $name) {
                     id
                 }
             }
         """
 
         variables = {
-            "orgName": self.orgName,
-            "repoName": self.repoName
+            "owner": self.orgName,
+            "name": self.repoName
         }
 
         repoID = asyncio.run(client.execute_async(query=getID, variables=variables, headers=headers))
