@@ -41,11 +41,11 @@ class BugReporter:
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
-                    self._handleError(e)
+                    self._handleError(e, *args, **kwargs)
             return wrapper
         return decorator
 
-    def _handleError(self, e: Exception):
+    def _handleError(self, e: Exception, *args, **kwargs):
         """Handles error by creating a bug report.
 
         Args:
@@ -63,6 +63,7 @@ class BugReporter:
 
         # description for bug report
         description = f'Type: {exc_type}\nError text: {e}\nFunction Name: {function_name}\n{traceback.format_exc()}'
+        description += f"Arguments: {args}\nKeyword Arguments: {kwargs}"
 
         # Check if we need to send a bug report
         if not self.test:
