@@ -22,7 +22,7 @@ class BugReporter:
             githubKey (str): the key used to make bug reports to our github
             repoName (str): the name of the repository
             orgName (str): the name of the organization
-            test (bool, optional): whether to run in testing mode. Defaults to False.
+            test (bool, optional): whether to run in testing mode; Defaults to False.
         """
         self.githubKey = githubKey
         self.repoName = repoName
@@ -178,7 +178,7 @@ class BugReporter:
         return issueExists
 
     def _getRepoId(self) -> str:
-        """Gets the repository ID for the Boto4GS repository.
+        """Gets the repository ID.
 
         Returns:
             str: the repository ID
