@@ -54,7 +54,7 @@ class BugReporter:
         except Exception as e:
             self._handleError(e, *args, **kwargs)
 
-    def _handleError(self, e: Exception, *args, **kwargs):
+    def _handleError(self, e: Exception, *args, **kwargs) -> None:
         """Handles error by creating a bug report.
 
         Args:
@@ -63,15 +63,15 @@ class BugReporter:
         Raises:
             e: the exception that was raised
         """
-        exc_type = type(e).__name__
+        excType = type(e).__name__
         tb = traceback.extract_tb(sys.exc_info()[2])
-        function_name = tb[-1][2]
+        functionName = tb[-1][2]
 
         # title for bug report
-        title = f"{self.repoName} had a {exc_type} error with the {function_name} function"
+        title = f"{self.repoName} had a {excType} error with the {functionName} function"
 
         # description for bug report
-        description = f'Type: {exc_type}\nError text: {e}\nFunction Name: {function_name}\n{traceback.format_exc()}'
+        description = f'Type: {excType}\nError text: {e}\nFunction Name: {functionName}\n{traceback.format_exc()}'
         description += f"Arguments: {args}\nKeyword Arguments: {kwargs}"
 
         # Check if we need to send a bug report
@@ -82,7 +82,7 @@ class BugReporter:
         print(description)
         raise e
 
-    def _sendBugReport(self, errorTitle: str, errorMessage: str):
+    def _sendBugReport(self, errorTitle: str, errorMessage: str) -> None:
         """Sends a bug report to the Github repository.
 
         Args:

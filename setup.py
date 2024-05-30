@@ -5,7 +5,7 @@ import setuptools
 from _version import __version__ as version
 
 with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
+    longDescription = fh.read()
 
 requirements = ""
 with open("PyBugReporter/requirements.txt", "r", encoding="utf-8") as fh:
@@ -13,7 +13,15 @@ with open("PyBugReporter/requirements.txt", "r", encoding="utf-8") as fh:
 
 requirements = requirements.split("\n")
 
-def listFolders(directory):
+def listFolders(directory: str) -> list[str]:
+    """Lists all folders in a directory and its subdirectories.
+
+    Args:
+        directory (str): the directory to search
+
+    Returns:
+        list[str]: the list of folders in the directory and its subdirectories
+    """
     folders = []
     for item in os.listdir(directory):
         itemPath = os.path.join(directory, item)
@@ -35,7 +43,7 @@ setuptools.setup(
     author='Record Linking Lab',
     author_email='recordlinkinglab@gmail.com',
     description='A python library for catching thrown exceptions and automatically creating issues on a GitHub repo.',
-    long_description=long_description,
+    long_description=longDescription,
     long_description_content_type="text/markdown",
     url='https://github.com/byuawsfhtl/PyBugReporter.git',
     project_urls = {
