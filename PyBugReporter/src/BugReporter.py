@@ -14,38 +14,47 @@ class BugReporter:
         orgName (str): the name of the organization
         test (bool): whether to run in testing mode
     """
+    githubKey: str = ''
+    repoName: str = ''
+    orgName: str = ''
+    test: bool = False
 
-    def __init__(self, githubKey: str, repoName: str, orgName: str, test: bool = False):
-        """Initializes the BugReporter class.
+    def __init__(self, func: callable) -> None:
+        """Initializes the BugReporter class as a decorator.
+        
+        Args:
+            func (callable): the function to be decorated
+        """
+        self.func = func
+
+    @classmethod
+    def setVars(cls, githubKey: str, repoName: str, orgName: str, test: bool) -> None:
+        """Sets the necessary variables to make bug reports.
 
         Args:
             githubKey (str): the key used to make bug reports to our github
             repoName (str): the name of the repository
             orgName (str): the name of the organization
-            test (bool, optional): whether to run in testing mode; Defaults to False.
+            test (bool): whether to run in testing mode
         """
-        self.githubKey = githubKey
-        self.repoName = repoName
-        self.orgName = orgName
-        self.test = test
+        cls.githubKey = githubKey
+        cls.repoName = repoName
+        cls.orgName = orgName
+        cls.test = test
 
-    def report(self) -> callable:
+    def __call__(self, *args, **kwargs) -> None:
         """Decorator that catches exceptions and sends a bug report to the github repository.
 
-        Returns:
-            callable: the decorated function
+        Args:
+            *args: the arguments for the function
+            **kwargs: the keyword arguments for the function
         """
-        def decorator(func):
-            @wraps(func)
-            def wrapper(*args, **kwargs):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    self._handleError(e, *args, **kwargs)
-            return wrapper
-        return decorator
+        try:
+            return self.func(*args, **kwargs)
+        except Exception as e:
+            self._handleError(e, *args, **kwargs)
 
-    def _handleError(self, e: Exception, *args, **kwargs):
+    def _handleError(self, e: Exception, *args, **kwargs) -> None:
         """Handles error by creating a bug report.
 
         Args:
@@ -54,15 +63,15 @@ class BugReporter:
         Raises:
             e: the exception that was raised
         """
-        exc_type = type(e).__name__
+        excType = type(e).__name__
         tb = traceback.extract_tb(sys.exc_info()[2])
-        function_name = tb[-1][2]
+        functionName = tb[-1][2]
 
         # title for bug report
-        title = f"{self.repoName} had a {exc_type} error with the {function_name} function"
+        title = f"{self.repoName} had a {excType} error with the {functionName} function"
 
         # description for bug report
-        description = f'Type: {exc_type}\nError text: {e}\nFunction Name: {function_name}\n{traceback.format_exc()}'
+        description = f'Type: {excType}\nError text: {e}\nFunction Name: {functionName}\n{traceback.format_exc()}'
         description += f"Arguments: {args}\nKeyword Arguments: {kwargs}"
 
         # Check if we need to send a bug report
@@ -73,7 +82,7 @@ class BugReporter:
         print(description)
         raise e
 
-    def _sendBugReport(self, errorTitle: str, errorMessage: str):
+    def _sendBugReport(self, errorTitle: str, errorMessage: str) -> None:
         """Sends a bug report to the Github repository.
 
         Args:
