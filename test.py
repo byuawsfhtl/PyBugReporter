@@ -9,7 +9,7 @@ if __name__ == "__main__":
     token = response['Parameter']['Value']
     BugReporter.setVars(token, 'PyBugReporter', 'byuawsfhtl', True)
     
-    @BugReporter
+    @BugReporter(extraInfo=True, env='test')
     def test(item, item2=None):
         raise Exception("This is a test exception")
 

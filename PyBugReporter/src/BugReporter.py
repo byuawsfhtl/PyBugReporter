@@ -13,19 +13,23 @@ class BugReporter:
         repoName (str): the name of the repository
         orgName (str): the name of the organization
         test (bool): whether to run in testing mode
+        extraInfo (bool): whether to include extra information in the bug report
+        kwargs: extra info for the bug report
     """
     githubKey: str = ''
     repoName: str = ''
     orgName: str = ''
     test: bool = False
 
-    def __init__(self, func: callable) -> None:
+    def __init__(self, extraInfo: bool, **kwargs) -> None:
         """Initializes the BugReporter class as a decorator.
         
         Args:
-            func (callable): the function to be decorated
+            extraInfo (bool): whether to include extra information in the bug report
+            **kwargs: extra info for the bug report
         """
-        self.func = func
+        self.extraInfo = extraInfo
+        self.kwargs = kwargs
 
     @classmethod
     def setVars(cls, githubKey: str, repoName: str, orgName: str, test: bool) -> None:
@@ -42,17 +46,20 @@ class BugReporter:
         cls.orgName = orgName
         cls.test = test
 
-    def __call__(self, *args, **kwargs) -> None:
+    def __call__(self, func) -> None:
         """Decorator that catches exceptions and sends a bug report to the github repository.
 
         Args:
             *args: the arguments for the function
             **kwargs: the keyword arguments for the function
         """
-        try:
-            return self.func(*args, **kwargs)
-        except Exception as e:
-            self._handleError(e, *args, **kwargs)
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> None:
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                self._handleError(e, *args, **kwargs)
+        return wrapper
 
     def _handleError(self, e: Exception, *args, **kwargs) -> None:
         """Handles error by creating a bug report.
@@ -73,6 +80,8 @@ class BugReporter:
         # description for bug report
         description = f'Type: {excType}\nError text: {e}\nFunction Name: {functionName}\n{traceback.format_exc()}'
         description += f"Arguments: {args}\nKeyword Arguments: {kwargs}"
+        if self.extraInfo:
+            description += f"\nExtra Info: {self.kwargs}"
 
         # Check if we need to send a bug report
         if not self.test:
