@@ -46,15 +46,20 @@ class BugReporter:
         cls.orgName = orgName
         cls.test = test
 
-    def __call__(self, func) -> None:
+    def __call__(self, func: callable) -> None:
         """Decorator that catches exceptions and sends a bug report to the github repository.
 
         Args:
-            *args: the arguments for the function
-            **kwargs: the keyword arguments for the function
+            func (callable): the function to be decorated
         """
         @wraps(func)
         def wrapper(*args, **kwargs) -> None:
+            """Wrapper function that catches exceptions and sends a bug report to the github repository.
+
+            Args:
+                *args: the arguments for the function
+                **kwargs: the keyword arguments for the function
+            """
             try:
                 return func(*args, **kwargs)
             except Exception as e:
