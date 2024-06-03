@@ -226,3 +226,56 @@ class BugReporter:
 
         repoID = asyncio.run(client.execute_async(query=getID, variables=variables, headers=headers))
         return repoID['data']['repository']['id']
+
+    @classmethod
+    def manualBugReport(cls, errorTitle: str, errorMessage: str) -> None:
+        """Manually sends a bug report to the Github repository.
+
+        Args:
+            errorTitle (str): the title of the error
+            errorMessage (str): the error message
+        """
+        client = GraphqlClient(endpoint="https://api.github.com/graphql")
+        headers = {"Authorization": f"Bearer {cls.githubKey}"}
+
+        # query variables
+        repoId = cls._getRepoId(cls)
+        bugLabel = "LA_kwDOJ3JPj88AAAABU1q15w"
+        autoLabel = "LA_kwDOJ3JPj88AAAABU1q2DA"
+        
+        # Create new issue
+        createIssue = """
+            mutation createIssue($input: CreateIssueInput!) {
+                createIssue(input: $input) {
+                    issue {
+                        title                
+                        body
+                        repository {
+                            name
+                        }
+                        labels(first: 10) {
+                            nodes {
+                            name
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "input": {
+                "repositoryId": repoId,
+                "title": errorTitle,
+                "body": errorMessage,
+                "labelIds": [bugLabel, autoLabel]
+            }
+        }
+
+        issueExists = cls._checkIfIssueExists(cls, errorTitle)
+
+        if (issueExists == False):
+            result = asyncio.run(client.execute_async(query=createIssue, variables=variables, headers=headers))
+            print('\nThis error has been reported to the Tree Growth team.\n')
+        else:
+            print('\nOur team is already aware of this issue.\n')
