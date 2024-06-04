@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [prd, stg, dev]
+    types: [opened, reopened, synchronize, edited]
+    paths-ignore: # Pushes that include only these changed files won't trigger actions
+      - "**/README.md"
+      - "**/.gitignore"
+      - "**/docs/*"
+
+jobs:
+  checkMeds:
+    name: Check Meds (merge every day)
+    runs-on: ubuntu-latest
+    steps:
+        - name: Check Meds
+          uses: byuawsfhtl/MedsAction@v1.0.0
+
+  standardCheck:
+    name: Python Standard Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Follow Python Standard
+        uses: byuawsfhtl/PythonStandardAction@v1.0.8
