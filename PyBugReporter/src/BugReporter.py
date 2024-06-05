@@ -83,8 +83,8 @@ class BugReporter:
         title = f"{self.repoName} had a {excType} error with the {functionName} function"
 
         # description for bug report
-        description = f'Type: {excType}\nError text: {e}\nFunction Name: {functionName}\n{traceback.format_exc()}'
-        description += f"Arguments: {args}\nKeyword Arguments: {kwargs}"
+        description = f'Type: {excType}\nError text: {e}\nFunction Name: {functionName}\n\n{traceback.format_exc()}'
+        description += f"\nArguments: {args}\nKeyword Arguments: {kwargs}"
         if self.extraInfo:
             description += f"\nExtra Info: {self.kwargs}"
 
@@ -235,6 +235,9 @@ class BugReporter:
             errorTitle (str): the title of the error
             errorMessage (str): the error message
         """
+        if cls.test == True:
+            print('This is a test run and no bug report will be sent.')
+            return
         client = GraphqlClient(endpoint="https://api.github.com/graphql")
         headers = {"Authorization": f"Bearer {cls.githubKey}"}
 
