@@ -34,7 +34,7 @@ class BugHandler:
 class BugReporter:
     handlers: dict = {}
     extraInfo: bool = False
-    handler: BugHandler = None
+    repoName: str
 
     def __init__(self, repoName: str, extraInfo: bool, **kwargs) -> None:
         """Initializes the BugReporter class as a decorator.
@@ -43,9 +43,7 @@ class BugReporter:
             extraInfo (bool): whether to include extra information in the bug report
             **kwargs: extra info for the bug report
         """
-        if repoName not in self.handlers:
-            raise NotCreatedError(f"{repoName} has not been associated with a reporter")
-        self.handler = self.handlers[repoName]
+        self.repoName = repoName
         self.extraInfo = extraInfo
         self.kwargs = kwargs
 
@@ -95,7 +93,7 @@ class BugReporter:
         functionName = tb[-1][2]
 
         # title for bug report
-        title = f"{self.handler.repoName} had a {excType} error with the {functionName} function"
+        title = f"{self.handlers[self.repoName].repoName} had a {excType} error with the {functionName} function"
 
         # description for bug report
         description = f'Type: {excType}\nError text: {e}\nFunction Name: {functionName}\n\n{traceback.format_exc()}'
@@ -104,7 +102,7 @@ class BugReporter:
             description += f"\nExtra Info: {self.kwargs}"
 
         # Check if we need to send a bug report
-        if not self.handler.test:
+        if not self.handlers[self.repoName].test:
             self._sendBugReport(title, description)
 
         print(title)
@@ -119,10 +117,10 @@ class BugReporter:
             errorMessage (str): the error message
         """    
         client = GraphqlClient(endpoint="https://api.github.com/graphql")
-        headers = {"Authorization": f"Bearer {self.handler.githubKey}"}
+        headers = {"Authorization": f"Bearer {self.handlers[self.repoName].githubKey}"}
 
         # query variables
-        repoId = self._getRepoId(self.handler)
+        repoId = self._getRepoId(self.handlers[self.repoName])
         bugLabel = "LA_kwDOJ3JPj88AAAABU1q15w"
         autoLabel = "LA_kwDOJ3JPj88AAAABU1q2DA"
         
@@ -155,7 +153,7 @@ class BugReporter:
             }
         }
 
-        issueExists = self._checkIfIssueExists(self.handler, errorTitle)
+        issueExists = self._checkIfIssueExists(self.handlers[self.repoName], errorTitle)
 
         if (issueExists == False):
             result = asyncio.run(client.execute_async(query=createIssue, variables=variables, headers=headers))
