@@ -32,9 +32,9 @@ class BugHandler:
         cls.test = test
 
 class BugReporter:
-    handlers: dict
-    extraInfo: bool
-    handler: BugHandler
+    handlers: dict = {}
+    extraInfo: bool = False
+    handler: BugHandler = None
 
     def __init__(self, repoName: str, extraInfo: bool, **kwargs) -> None:
         """Initializes the BugReporter class as a decorator.
