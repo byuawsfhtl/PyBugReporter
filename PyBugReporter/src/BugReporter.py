@@ -24,12 +24,11 @@ class BugHandler:
     orgName: str = ''
     test: bool = False
 
-    @classmethod
-    def setVars(cls, githubKey: str, repoName: str, orgName: str, test: bool) -> None:
-        cls.githubKey = githubKey
-        cls.repoName = repoName
-        cls.orgName = orgName
-        cls.test = test
+    def __init__(self, githubKey: str, repoName: str, orgName: str, test: bool) -> None:
+        self.githubKey = githubKey
+        self.repoName = repoName
+        self.orgName = orgName
+        self.test = test
 
 class BugReporter:
     handlers: dict = {}
@@ -57,7 +56,7 @@ class BugReporter:
             orgName (str): the name of the organization
             test (bool): whether to run in testing mode
         """
-        cls.handlers[repoName] = BugHandler.setVars(githubKey, repoName, orgName, test)
+        cls.handlers[repoName] = BugHandler(githubKey, repoName, orgName, test)
 
     def __call__(self, func: callable) -> None:
         """Decorator that catches exceptions and sends a bug report to the github repository.
