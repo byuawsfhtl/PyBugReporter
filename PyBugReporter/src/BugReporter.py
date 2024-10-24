@@ -6,7 +6,7 @@ from functools import wraps
 from python_graphql_client import GraphqlClient
 
 class NotCreatedError(Exception):
-    """Raised when someone tries to report a bug to a repo that has not been set up as a reporting destination threw setVars.
+    """Raised when someone tries to report a bug to a repo that has not been set up as a reporting destination through setVars.
     """
     pass
 
