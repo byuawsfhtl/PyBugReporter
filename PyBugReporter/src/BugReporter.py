@@ -6,6 +6,8 @@ from functools import wraps
 from python_graphql_client import GraphqlClient
 
 class NotCreatedError(Exception):
+    """Raised when someone tries to report a bug to a repo that has not been set up as a reporting destination threw setVars.
+    """
     pass
 
 class BugHandler:
@@ -25,12 +27,27 @@ class BugHandler:
     test: bool = False
 
     def __init__(self, githubKey: str, repoName: str, orgName: str, test: bool) -> None:
+        """Saves the given information in the BugHandler object.
+
+        Args:
+            githubKey (str): the key to use to make the issue
+            repoName (str): the name of the repo to report to
+            orgName (str): the organization of the repo
+            test (bool): whether or not bugs in this code should actually be reported
+        """
         self.githubKey = githubKey
         self.repoName = repoName
         self.orgName = orgName
         self.test = test
 
 class BugReporter:
+    """Sends errors to their corresponding repos.
+
+    Attributes:
+        handlers (dict): the created BugHandlers to use to send reports
+        extraInfo (bool): whether or not extra information is being passed in
+        repoName (str): the most recent set up repo to send to
+    """
     handlers: dict = {}
     extraInfo: bool = False
     repoName: str
