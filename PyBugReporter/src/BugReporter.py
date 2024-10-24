@@ -5,7 +5,12 @@ from functools import wraps
 
 from python_graphql_client import GraphqlClient
 
-class BugReporter:
+class NotCreatedError(Exception):
+    """Raised when someone tries to report a bug to a repo that has not been set up as a reporting destination through setVars.
+    """
+    pass
+
+class BugHandler:
     """A class for catching exceptions and automatically creating issues on a GitHub repo.
 
     Attributes:
@@ -21,13 +26,40 @@ class BugReporter:
     orgName: str = ''
     test: bool = False
 
-    def __init__(self, extraInfo: bool, **kwargs) -> None:
+    def __init__(self, githubKey: str, repoName: str, orgName: str, test: bool) -> None:
+        """Saves the given information in the BugHandler object.
+
+        Args:
+            githubKey (str): the key to use to make the issue
+            repoName (str): the name of the repo to report to
+            orgName (str): the organization of the repo
+            test (bool): whether or not bugs in this code should actually be reported
+        """
+        self.githubKey = githubKey
+        self.repoName = repoName
+        self.orgName = orgName
+        self.test = test
+
+class BugReporter:
+    """Sends errors to their corresponding repos.
+
+    Attributes:
+        handlers (dict): the created BugHandlers to use to send reports
+        extraInfo (bool): whether or not extra information is being passed in
+        repoName (str): the most recent set up repo to send to
+    """
+    handlers: dict = {}
+    extraInfo: bool = False
+    repoName: str
+
+    def __init__(self, repoName: str, extraInfo: bool, **kwargs) -> None:
         """Initializes the BugReporter class as a decorator.
         
         Args:
             extraInfo (bool): whether to include extra information in the bug report
             **kwargs: extra info for the bug report
         """
+        self.repoName = repoName
         self.extraInfo = extraInfo
         self.kwargs = kwargs
 
@@ -41,10 +73,7 @@ class BugReporter:
             orgName (str): the name of the organization
             test (bool): whether to run in testing mode
         """
-        cls.githubKey = githubKey
-        cls.repoName = repoName
-        cls.orgName = orgName
-        cls.test = test
+        cls.handlers[repoName] = BugHandler(githubKey, repoName, orgName, test)
 
     def __call__(self, func: callable) -> None:
         """Decorator that catches exceptions and sends a bug report to the github repository.
@@ -60,13 +89,14 @@ class BugReporter:
                 *args: the arguments for the function
                 **kwargs: the keyword arguments for the function
             """
+            repoName = self.repoName
             try:
                 return func(*args, **kwargs)
             except Exception as e:
-                self._handleError(e, *args, **kwargs)
+                self._handleError(e, repoName, *args, **kwargs)
         return wrapper
 
-    def _handleError(self, e: Exception, *args, **kwargs) -> None:
+    def _handleError(self, e: Exception, repoName: str, *args, **kwargs) -> None:
         """Handles error by creating a bug report.
 
         Args:
@@ -80,7 +110,7 @@ class BugReporter:
         functionName = tb[-1][2]
 
         # title for bug report
-        title = f"{self.repoName} had a {excType} error with the {functionName} function"
+        title = f"{repoName} had a {excType} error with the {functionName} function"
 
         # description for bug report
         description = f'Type: {excType}\nError text: {e}\nFunction Name: {functionName}\n\n{traceback.format_exc()}'
@@ -89,14 +119,14 @@ class BugReporter:
             description += f"\nExtra Info: {self.kwargs}"
 
         # Check if we need to send a bug report
-        if not self.test:
-            self._sendBugReport(title, description)
+        if not self.handlers[repoName].test:
+            self._sendBugReport(repoName, title, description)
 
         print(title)
         print(description)
         raise e
 
-    def _sendBugReport(self, errorTitle: str, errorMessage: str) -> None:
+    def _sendBugReport(self, repoName: str, errorTitle: str, errorMessage: str) -> None:
         """Sends a bug report to the Github repository.
 
         Args:
@@ -104,10 +134,10 @@ class BugReporter:
             errorMessage (str): the error message
         """    
         client = GraphqlClient(endpoint="https://api.github.com/graphql")
-        headers = {"Authorization": f"Bearer {self.githubKey}"}
+        headers = {"Authorization": f"Bearer {self.handlers[repoName].githubKey}"}
 
         # query variables
-        repoId = self._getRepoId()
+        repoId = self._getRepoId(self.handlers[repoName])
         bugLabel = "LA_kwDOJ3JPj88AAAABU1q15w"
         autoLabel = "LA_kwDOJ3JPj88AAAABU1q2DA"
         
@@ -140,7 +170,7 @@ class BugReporter:
             }
         }
 
-        issueExists = self._checkIfIssueExists(errorTitle)
+        issueExists = self._checkIfIssueExists(self.handlers[repoName], errorTitle)
 
         if (issueExists == False):
             result = asyncio.run(client.execute_async(query=createIssue, variables=variables, headers=headers))
@@ -148,17 +178,18 @@ class BugReporter:
         else:
             print('\nOur team is already aware of this issue.\n')
 
-    def _checkIfIssueExists(self, errorTitle: str) -> bool:
+    def _checkIfIssueExists(self, handler: BugHandler, errorTitle: str) -> bool:
         """Checks if an issue already exists in the repository.
 
         Args:
+            handler (BugHandler): the object of reporting details
             errorTitle (str): the title of the error
 
         Returns:
             bool: True if the issue exists, False if it does not
         """
         client = GraphqlClient(endpoint="https://api.github.com/graphql")
-        headers = {"Authorization": f"Bearer {self.githubKey}"}
+        headers = {"Authorization": f"Bearer {handler.githubKey}"}
 
         # query variables
         autoLabel = "auto generated"
@@ -180,8 +211,8 @@ class BugReporter:
         """
 
         variables = {
-            "login": self.orgName,
-            "name": self.repoName,
+            "login": handler.orgName,
+            "name": handler.repoName,
             "labels": autoLabel,
         }
 
@@ -201,14 +232,17 @@ class BugReporter:
 
         return issueExists
 
-    def _getRepoId(self) -> str:
+    def _getRepoId(self, handler: BugHandler) -> str:
         """Gets the repository ID.
+
+        Args:
+            handler (BugHandler): the object of reporting details
 
         Returns:
             str: the repository ID
         """
         client = GraphqlClient(endpoint="https://api.github.com/graphql")
-        headers = {"Authorization": f"Bearer {self.githubKey}"}
+        headers = {"Authorization": f"Bearer {handler.githubKey}"}
 
         # query variables
         getID = """
@@ -220,29 +254,33 @@ class BugReporter:
         """
 
         variables = {
-            "owner": self.orgName,
-            "name": self.repoName
+            "owner": handler.orgName,
+            "name": handler.repoName
         }
 
         repoID = asyncio.run(client.execute_async(query=getID, variables=variables, headers=headers))
         return repoID['data']['repository']['id']
 
     @classmethod
-    def manualBugReport(cls, errorTitle: str, errorMessage: str) -> None:
+    def manualBugReport(cls, repoName: str, errorTitle: str, errorMessage: str) -> None:
         """Manually sends a bug report to the Github repository.
 
         Args:
+            repoName (str): the name of the repo to report to
             errorTitle (str): the title of the error
             errorMessage (str): the error message
         """
-        if cls.test == True:
+        if repoName not in cls.handlers:
+            raise NotCreatedError(f"{repoName} has not been associated with a reporter")
+        handler = cls.handlers[repoName]
+        if handler.test == True:
             print('This is a test run and no bug report will be sent.')
             return
         client = GraphqlClient(endpoint="https://api.github.com/graphql")
-        headers = {"Authorization": f"Bearer {cls.githubKey}"}
+        headers = {"Authorization": f"Bearer {handler.githubKey}"}
 
         # query variables
-        repoId = cls._getRepoId(cls)
+        repoId = cls._getRepoId(cls, handler)
         bugLabel = "LA_kwDOJ3JPj88AAAABU1q15w"
         autoLabel = "LA_kwDOJ3JPj88AAAABU1q2DA"
         
@@ -275,7 +313,7 @@ class BugReporter:
             }
         }
 
-        issueExists = cls._checkIfIssueExists(cls, errorTitle)
+        issueExists = cls._checkIfIssueExists(cls, handler, errorTitle)
 
         if (issueExists == False):
             result = asyncio.run(client.execute_async(query=createIssue, variables=variables, headers=headers))
