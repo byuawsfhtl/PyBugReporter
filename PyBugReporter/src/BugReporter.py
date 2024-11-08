@@ -177,7 +177,7 @@ class BugReporter:
             result = asyncio.run(client.execute_async(query=createIssue, variables=variables, headers=headers))
             print('\nThis error has been reported to the Tree Growth team.\n')
 
-            issue_id = result['data']['createIssue']['issue']['id']  # Extract the issue ID
+            issueId = result['data']['createIssue']['issue']['id']  # Extract the issue ID
 
             # Mutation to add issue to a project
             addToProject = """
@@ -191,11 +191,11 @@ class BugReporter:
             """
             
             # Replace with your actual project ID
-            project_id = self.getProjectId(repoName, "Tree Growth Projects")
+            projectId = self.getProjectId(repoName, "Tree Growth Projects")
 
             variables = {
-                "projectId": project_id,
-                "contentId": issue_id
+                "projectId": projectId,
+                "contentId": issueId
             }
             
             # Execute the mutation to add the issue to the project
