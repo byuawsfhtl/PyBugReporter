@@ -146,6 +146,7 @@ class BugReporter:
             mutation createIssue($input: CreateIssueInput!) {
                 createIssue(input: $input) {
                     issue {
+                        id
                         title                
                         body
                         repository {
@@ -175,8 +176,67 @@ class BugReporter:
         if (issueExists == False):
             result = asyncio.run(client.execute_async(query=createIssue, variables=variables, headers=headers))
             print('\nThis error has been reported to the Tree Growth team.\n')
+
+            issue_id = result['data']['createIssue']['issue']['id']  # Extract the issue ID
+
+            # Mutation to add issue to a project
+            addToProject = """
+                mutation addToProject($projectId: ID!, $contentId: ID!) {
+                    addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+                        item {
+                            id
+                        }
+                    }
+                }
+            """
+            
+            # Replace with your actual project ID
+            project_id = self.getProjectId(repoName, "Tree Growth Projects")
+
+            variables = {
+                "projectId": project_id,
+                "contentId": issue_id
+            }
+            
+            # Execute the mutation to add the issue to the project
+            asyncio.run(client.execute_async(query=addToProject, variables=variables, headers=headers))
         else:
             print('\nOur team is already aware of this issue.\n')
+
+    def getProjectId(self, repoName: str, projectName: str) -> str:
+        """Retrieves the GitHub project ID for a specified repository and project name."""
+        client = GraphqlClient(endpoint="https://api.github.com/graphql")
+        headers = {"Authorization": f"Bearer {self.handlers[repoName].githubKey}"}
+
+        # Define the GraphQL query to list projects for the repository
+        query = """
+            query getProjectId($owner: String!, $repo: String!) {
+                repository(owner: $owner, name: $repo) {
+                    projectsV2(first: 10) {
+                        nodes {
+                            id
+                            title
+                        }
+                    }
+                }
+            }
+        """
+        
+        variables = {
+            "owner": self.handlers[repoName].orgName,
+            "repo": repoName
+        }
+
+        # Execute the query
+        response = asyncio.run(client.execute_async(query=query, variables=variables, headers=headers))
+        projects = response["data"]["repository"]["projectsV2"]["nodes"]
+
+        # Find the project with the matching name and return its ID
+        for project in projects:
+            if project["title"] == projectName:
+                return project["id"]
+
+        raise ValueError(f"Project '{projectName}' not found in repository '{repoName}'.")
 
     def _checkIfIssueExists(self, handler: BugHandler, errorTitle: str) -> bool:
         """Checks if an issue already exists in the repository.
