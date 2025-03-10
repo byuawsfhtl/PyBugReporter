@@ -2,7 +2,7 @@ import os
 
 import setuptools
 
-from _version import __version__ as version
+from PyBugReporter._version import __version__ as version
 
 with open("README.md", "r", encoding="utf-8") as fh:
     longDescription = fh.read()
