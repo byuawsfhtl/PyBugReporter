@@ -1,6 +1,5 @@
-import os
-
 import setuptools
+import os
 
 from PyBugReporter._version import __version__
 
@@ -51,4 +50,5 @@ setuptools.setup(
     },
     packages=folders,
     install_requires=requirements,
+    package_data={"": ["*.json", "*.txt"]},
 )
