@@ -16,6 +16,9 @@ jobs:
     name: Update Version
     runs-on: ubuntu-latest
     permissions: write-all
+    concurrency:
+      group: version-update
+      cancel-in-progress: false
     steps:
       - name: Update Version
         uses: byuawsfhtl/UpdateVersion@v1.0.7
