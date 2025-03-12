@@ -1,8 +1,7 @@
+import setuptools
 import os
 
-import setuptools
-
-from PyBugReporter._version import __version__ as version
+from PyBugReporter._version import __version__
 
 with open("README.md", "r", encoding="utf-8") as fh:
     longDescription = fh.read()
@@ -39,7 +38,7 @@ print(folders)
 
 setuptools.setup(
     name='PyBugReporter',
-    version=version,
+    version=__version__,
     author='Record Linking Lab',
     author_email='recordlinkinglab@gmail.com',
     description='A python library for catching thrown exceptions and automatically creating issues on a GitHub repo.',
@@ -51,4 +50,5 @@ setuptools.setup(
     },
     packages=folders,
     install_requires=requirements,
+    package_data={"": ["*.json", "*.txt"]},
 )
