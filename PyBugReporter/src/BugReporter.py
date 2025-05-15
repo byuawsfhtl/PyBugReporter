@@ -2,7 +2,7 @@ import asyncio
 import sys
 import traceback
 from functools import wraps
-import DiscordBot
+from PyBugReporter.src.DiscordBot import DiscordBot
 
 from python_graphql_client import GraphqlClient
 
@@ -73,7 +73,7 @@ class BugReporter:
         self.kwargs = kwargs
 
     @classmethod
-    def setVars(cls, githubKey: str, repoName: str, orgName: str, test: bool, useDiscord: bool = False, botToken: str = "") -> None:
+    def setVars(cls, githubKey: str, repoName: str, orgName: str, test: bool, useDiscord: bool = False, botToken: str = "", channelId: str = "") -> None:
         """Sets the necessary variables to make bug reports.
 
         Args:
@@ -82,7 +82,7 @@ class BugReporter:
             orgName (str): the name of the organization
             test (bool): whether to run in testing mode
         """
-        cls.handlers[repoName] = BugHandler(githubKey, repoName, orgName, test, useDiscord, botToken)
+        cls.handlers[repoName] = BugHandler(githubKey, repoName, orgName, test, useDiscord, botToken, channelId)
 
     def __call__(self, func: callable) -> None:
         """Decorator that catches exceptions and sends a bug report to the github repository.
@@ -141,12 +141,21 @@ class BugReporter:
         Args:
             errorTitle (str): the title of the error
             errorMessage (str): the error message
-        """    
+        """ 
+        asyncio.run(self._sendBugReport_async(repoName, errorTitle, errorMessage))
+   
+    async def _sendBugReport_async(self, repoName: str, errorTitle: str, errorMessage: str) -> None:
+        """Sends a bug report to the Github repository asynchronously.
+        
+        Args:
+            errorTitle (str): the title of the error
+            errorMessage (str): the error message
+        """
         client = GraphqlClient(endpoint="https://api.github.com/graphql")
         headers = {"Authorization": f"Bearer {self.handlers[repoName].githubKey}"}
 
         # query variables
-        repoId = self._getRepoId(self.handlers[repoName])
+        repoId = await self._getRepoId_async(self.handlers[repoName])
         bugLabel = "LA_kwDOJ3JPj88AAAABU1q15w"
         autoLabel = "LA_kwDOJ3JPj88AAAABU1q2DA"
         
@@ -180,10 +189,15 @@ class BugReporter:
             }
         }
 
-        issueExists = self._checkIfIssueExists(self.handlers[repoName], errorTitle)
+        # Send to Discord if applicable
+        if self.handlers[repoName].useDiscord:
+            discordBot = DiscordBot(self.handlers[repoName].botToken, self.handlers[repoName].channelId)
+            await discordBot.send_message(f"## {repoName}: {errorTitle}\n{errorMessage}")
 
-        if (issueExists == False):
-            result = asyncio.run(client.execute_async(query=createIssue, variables=variables, headers=headers))
+        issueExists = await self._checkIfIssueExists_async(self.handlers[repoName], errorTitle)
+
+        if (not issueExists):
+            result = await client.execute_async(query=createIssue, variables=variables, headers=headers)
             print('\nThis error has been reported to the Tree Growth team.\n')
 
             issueId = result['data']['createIssue']['issue']['id']  # Extract the issue ID
@@ -200,7 +214,7 @@ class BugReporter:
             """
             
             # Replace with your actual project ID
-            projectId = self.getProjectId(repoName, "Tree Growth Projects")
+            projectId = await self.getProjectId_async(repoName, "Tree Growth Projects")
 
             variables = {
                 "projectId": projectId,
@@ -208,18 +222,11 @@ class BugReporter:
             }
             
             # Execute the mutation to add the issue to the project
-            asyncio.run(client.execute_async(query=addToProject, variables=variables, headers=headers))
-
-            # Send to Discord if applicable
-            if self.handlers[repoName].useDiscord:
-                discordBot = DiscordBot(self.handlers[repoName].botToken, self.handlers[repoName].channelId)
-                asyncio.run(discordBot.run())
-                asyncio.run(discordBot.send_message( f"## {repoName}: {errorTitle}\n{errorMessage}"))
+            await client.execute_async(query=addToProject, variables=variables, headers=headers)
         else:
             print('\nOur team is already aware of this issue.\n')
 
-    def getProjectId(self, repoName: str, projectName: str) -> str:
-        """Retrieves the GitHub project ID for a specified repository and project name."""
+    async def getProjectId_async(self, repoName: str, projectName: str) -> str:
         client = GraphqlClient(endpoint="https://api.github.com/graphql")
         headers = {"Authorization": f"Bearer {self.handlers[repoName].githubKey}"}
 
@@ -243,7 +250,7 @@ class BugReporter:
         }
 
         # Execute the query
-        response = asyncio.run(client.execute_async(query=query, variables=variables, headers=headers))
+        response = await client.execute_async(query=query, variables=variables, headers=headers)
         projects = response["data"]["repository"]["projectsV2"]["nodes"]
 
         # Find the project with the matching name and return its ID
@@ -253,7 +260,7 @@ class BugReporter:
 
         raise ValueError(f"Project '{projectName}' not found in repository '{repoName}'.")
 
-    def _checkIfIssueExists(self, handler: BugHandler, errorTitle: str) -> bool:
+    async def _checkIfIssueExists_async(self, handler: BugHandler, errorTitle: str) -> bool:
         """Checks if an issue already exists in the repository.
 
         Args:
@@ -291,7 +298,7 @@ class BugReporter:
             "labels": autoLabel,
         }
 
-        result = asyncio.run(client.execute_async(query=findIssue, variables=variables, headers=headers))
+        result = await client.execute_async(query=findIssue, variables=variables, headers=headers)
         nodes = result['data']['organization']['repository']['issues']['nodes']
 
         index = 0
@@ -307,7 +314,7 @@ class BugReporter:
 
         return issueExists
 
-    def _getRepoId(self, handler: BugHandler) -> str:
+    async def _getRepoId_async(self, handler: BugHandler) -> str:
         """Gets the repository ID.
 
         Args:
@@ -333,7 +340,7 @@ class BugReporter:
             "name": handler.repoName
         }
 
-        repoID = asyncio.run(client.execute_async(query=getID, variables=variables, headers=headers))
+        repoID = await client.execute_async(query=getID, variables=variables, headers=headers)
         return repoID['data']['repository']['id']
 
     @classmethod
