@@ -2,6 +2,7 @@ import asyncio
 import sys
 import traceback
 from functools import wraps
+import DiscordBot
 
 from python_graphql_client import GraphqlClient
 
@@ -25,8 +26,11 @@ class BugHandler:
     repoName: str = ''
     orgName: str = ''
     test: bool = False
+    useDiscord: bool = False
+    botToken: str = ''
+    channelId: str = ''
 
-    def __init__(self, githubKey: str, repoName: str, orgName: str, test: bool) -> None:
+    def __init__(self, githubKey: str, repoName: str, orgName: str, test: bool, useDiscord: bool = False, botToken = "", channelId: str = "") -> None:
         """Saves the given information in the BugHandler object.
 
         Args:
@@ -39,6 +43,11 @@ class BugHandler:
         self.repoName = repoName
         self.orgName = orgName
         self.test = test
+        self.useDiscord = useDiscord
+
+        if useDiscord:
+            self.botToken = botToken
+            self.channelId = channelId
 
 class BugReporter:
     """Sends errors to their corresponding repos.
@@ -64,7 +73,7 @@ class BugReporter:
         self.kwargs = kwargs
 
     @classmethod
-    def setVars(cls, githubKey: str, repoName: str, orgName: str, test: bool) -> None:
+    def setVars(cls, githubKey: str, repoName: str, orgName: str, test: bool, useDiscord: bool = False, botToken: str = "") -> None:
         """Sets the necessary variables to make bug reports.
 
         Args:
@@ -73,7 +82,7 @@ class BugReporter:
             orgName (str): the name of the organization
             test (bool): whether to run in testing mode
         """
-        cls.handlers[repoName] = BugHandler(githubKey, repoName, orgName, test)
+        cls.handlers[repoName] = BugHandler(githubKey, repoName, orgName, test, useDiscord, botToken)
 
     def __call__(self, func: callable) -> None:
         """Decorator that catches exceptions and sends a bug report to the github repository.
@@ -200,6 +209,12 @@ class BugReporter:
             
             # Execute the mutation to add the issue to the project
             asyncio.run(client.execute_async(query=addToProject, variables=variables, headers=headers))
+
+            # Send to Discord if applicable
+            if self.handlers[repoName].useDiscord:
+                discordBot = DiscordBot(self.handlers[repoName].botToken, self.handlers[repoName].channelId)
+                asyncio.run(discordBot.run())
+                asyncio.run(discordBot.send_message( f"## {repoName}: {errorTitle}\n{errorMessage}"))
         else:
             print('\nOur team is already aware of this issue.\n')
 
