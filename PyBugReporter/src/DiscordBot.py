@@ -15,12 +15,19 @@ class DiscordBot(discord.Client):
         _alreadySent (bool): Whether the message has already been sent.
         _done_future (asyncio.Future): A future that is set when the bot is done.
     """
-    def __init__(self, token, channel_id):
+    def __init__(self, token: str, channelId: str | int):
+        """
+        Initializes the Discord bot with the given token and channel ID.
+
+        Args:
+            token (str): The bot token.
+            channel_id (int): The ID of the channel to send messages to.
+        """
         self.token = token
-        self.channel_id = int(channel_id)
+        self.channelId = int(channelId)
         self._message = None
         self._alreadySent = False
-        self._done_future = None
+        self._doneFuture = None
 
         intents = discord.Intents(emojis = True,
                                   guild_reactions = True,
@@ -39,34 +46,34 @@ class DiscordBot(discord.Client):
         """
         self._message = message
         self._alreadySent = alreadySent
-        self._done_future = asyncio.get_running_loop().create_future()
+        self._doneFuture = asyncio.get_running_loop().create_future()
         print("Starting bot...")
         # Start the bot as a background task
         asyncio.create_task(self.start(self.token))
         # Wait until the message is sent and the bot is closed
-        await self._done_future
+        await self._doneFuture
 
     async def on_ready(self):
         """
         Called when the bot is ready. Also sends the message to the specified channel, or reacts if it's been sent.
         """
         try:
-            channel = await self.fetch_channel(self.channel_id)
+            channel = await self.fetch_channel(self.channelId)
             if channel and not self._alreadySent:
                 await channel.send(self._message)
-                print(f"Sent message to channel {self.channel_id}")
+                print(f"Sent message to channel {self.channelId}")
             elif channel and self._alreadySent:
                 async for message in channel.history(limit=HISTORY_LIMIT):
                     if message.content == self._message:
                         await message.add_reaction(EMOJI)
                         break
             else:
-                print(f"Channel with ID {self.channel_id} not found.")
+                print(f"Channel with ID {self.channelId} not found.")
         except Exception as e:
             print(f"Error sending message: {e}")
         finally:
             print("Shutting down bot...")
             await self.close()
             # Mark the future as done so send_message can return
-            if self._done_future and not self._done_future.done():
-                self._done_future.set_result(True)
+            if self._doneFuture and not self._doneFuture.done():
+                self._doneFuture.set_result(True)

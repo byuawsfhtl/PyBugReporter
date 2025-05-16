@@ -28,9 +28,9 @@ class BugHandler:
     test: bool = False
     useDiscord: bool = False
     botToken: str = ''
-    channelId: str = ''
+    channelId: str | int = ''
 
-    def __init__(self, githubKey: str, repoName: str, orgName: str, test: bool, useDiscord: bool = False, botToken = "", channelId: str = "") -> None:
+    def __init__(self, githubKey: str, repoName: str, orgName: str, test: bool, useDiscord: bool = False, botToken: str = "", channelId: str | int = "") -> None:
         """Saves the given information in the BugHandler object.
 
         Args:
@@ -38,6 +38,9 @@ class BugHandler:
             repoName (str): the name of the repo to report to
             orgName (str): the organization of the repo
             test (bool): whether or not bugs in this code should actually be reported
+            useDiscord (bool): whether to send the bug report to Discord
+            botToken (str): the token for the Discord bot
+            channelId (str | int): the ID of the Discord channel to send messages to
         """
         self.githubKey = githubKey
         self.repoName = repoName
