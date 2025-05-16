@@ -189,12 +189,12 @@ class BugReporter:
             }
         }
 
+        issueExists = await self._checkIfIssueExists_async(self.handlers[repoName], errorTitle)
+
         # Send to Discord if applicable
         if self.handlers[repoName].useDiscord:
             discordBot = DiscordBot(self.handlers[repoName].botToken, self.handlers[repoName].channelId)
-            await discordBot.send_message(f"## {repoName}: {errorTitle}\n{errorMessage}")
-
-        issueExists = await self._checkIfIssueExists_async(self.handlers[repoName], errorTitle)
+            await discordBot.send_message(f"## {repoName}: {errorTitle}\n{errorMessage}", issueExists)
 
         if (not issueExists):
             result = await client.execute_async(query=createIssue, variables=variables, headers=headers)
