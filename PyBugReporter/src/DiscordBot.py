@@ -5,6 +5,16 @@ HISTORY_LIMIT = 20
 EMOJI = "‼"
 
 class DiscordBot(discord.Client):
+    """
+    A simple Discord bot that forwards the bug reports to a given Discord channel.
+
+    Attributes:
+        token (str): The bot token.
+        channel_id (int): The ID of the channel to send messages to.
+        _message (str): The message to send.
+        _alreadySent (bool): Whether the message has already been sent.
+        _done_future (asyncio.Future): A future that is set when the bot is done.
+    """
     def __init__(self, token, channel_id):
         self.token = token
         self.channel_id = int(channel_id)
@@ -20,6 +30,13 @@ class DiscordBot(discord.Client):
         super().__init__(intents=intents)
 
     async def send_message(self, message, alreadySent = False):
+        """
+        Sends a message to the specified channel by setting the variables and starting the bot, then turning it off when finished.
+
+        Args:
+            message (str): The message to send.
+            alreadySent (bool): Whether the message has already been sent.
+        """
         self._message = message
         self._alreadySent = alreadySent
         self._done_future = asyncio.get_running_loop().create_future()
@@ -30,6 +47,9 @@ class DiscordBot(discord.Client):
         await self._done_future
 
     async def on_ready(self):
+        """
+        Called when the bot is ready. Also sends the message to the specified channel, or reacts if it's been sent.
+        """
         try:
             channel = await self.fetch_channel(self.channel_id)
             if channel and not self._alreadySent:
