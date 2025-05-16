@@ -9,19 +9,19 @@ class DiscordBot(discord.Client):
     A simple Discord bot that forwards the bug reports to a given Discord channel.
 
     Attributes:
-        token (str): The bot token.
-        channel_id (int): The ID of the channel to send messages to.
-        _message (str): The message to send.
-        _alreadySent (bool): Whether the message has already been sent.
-        _done_future (asyncio.Future): A future that is set when the bot is done.
+        token (str): bot token
+        channel_id (int): the ID of the channel to send messages to
+        _message (str): message to send
+        _alreadySent (bool): whether the message has already been sent
+        _done_future (asyncio.Future): a future that is set when the bot is done
     """
-    def __init__(self, token: str, channelId: str | int):
+    def __init__(self, token: str, channelId: str | int) -> None:
         """
         Initializes the Discord bot with the given token and channel ID.
 
         Args:
-            token (str): The bot token.
-            channel_id (int): The ID of the channel to send messages to.
+            token (str): bot token
+            channel_id (int): the ID of the channel to send messages to
         """
         self.token = token
         self.channelId = int(channelId)
