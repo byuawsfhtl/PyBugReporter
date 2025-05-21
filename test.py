@@ -18,39 +18,78 @@ if __name__ == "__main__":
     
     @BugReporter('PyBugReporter', extraInfo=True, env='test')
     def test(item, item2=None):
-        raise Exception("""
-                        This is a really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really
-                         really really really really really really really really long test exception
-                        """)
+        # raise Exception("""
+        #                 This is a really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really
+        #                  really really really really really really really really long test exception
+        #                 """)
+
+        def this():
+            def exception():
+                def has():
+                    def an():
+                        def insane():
+                            def traceback():
+                                def length():
+                                    def that():
+                                        def just():
+                                            def keeps():
+                                                def going():
+                                                    def on():
+                                                        def yep():
+                                                            def still():
+                                                                def more():
+                                                                    def never():
+                                                                        def do():
+                                                                            def this():
+                                                                                raise Exception("This is a test exception")
+                                                                            this()
+                                                                        do()
+                                                                    never()
+                                                                more()
+                                                            still()
+                                                        yep()
+                                                    on()
+                                                going()
+                                            keeps()
+                                        just()
+                                    that()
+                                length()
+                            traceback()
+                        insane()
+                    an()
+                has()
+            exception()
+        this()
+                                                
 
     test(None, item2='item2')
