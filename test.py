@@ -18,6 +18,39 @@ if __name__ == "__main__":
     
     @BugReporter('PyBugReporter', extraInfo=True, env='test')
     def test(item, item2=None):
-        raise Exception("This is a test exception")
+        raise Exception("""
+                        This is a really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really
+                         really really really really really really really really long test exception
+                        """)
 
     test(None, item2='item2')
