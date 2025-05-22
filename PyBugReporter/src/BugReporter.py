@@ -130,24 +130,40 @@ class BugReporter:
         if self.extraInfo:
             description += f"\nExtra Info: {self.kwargs}"
 
+        # shortened description for discord if too long (shortens the error text)
+        start = f"# {title}\n\nType: {excType}\nError text: "
+        compress = f"{e}\nTraceback: {traceback.format_exc()}"
+        end = f"\n\nFunction Name: {functionName}\nArguments: {args}\nKeyword Arguments: {kwargs}"
+        if self.extraInfo:
+            end += f"\nExtra Info: {self.kwargs}"
+
+        staticLength = len(start) + len(end)
+        if staticLength > 2000:
+            shortDescription = f"# {title}\n\n" + description[:2000 - len(f"# {title}\n\n") - 3] + "..."
+        else:
+            shortDescription = f"{start}{compress[:2000 - staticLength]}{end}"
+
+        print(f"SHORT DESCRIPTION with length {len(shortDescription)}:\n{shortDescription}")
+        
+
         # Check if we need to send a bug report
         if not self.handlers[repoName].test:
-            self._sendBugReport(repoName, title, description)
+            self._sendBugReport(repoName, title, description, shortDescription)
 
         print(title)
         print(description)
         raise e
 
-    def _sendBugReport(self, repoName: str, errorTitle: str, errorMessage: str) -> None:
+    def _sendBugReport(self, repoName: str, errorTitle: str, errorMessage: str, shortErrorMessage: str) -> None:
         """Sends a bug report to the Github repository.
 
         Args:
             errorTitle (str): the title of the error
             errorMessage (str): the error message
         """ 
-        asyncio.run(self._sendBugReport_async(repoName, errorTitle, errorMessage))
+        asyncio.run(self._sendBugReport_async(repoName, errorTitle, errorMessage, shortErrorMessage))
    
-    async def _sendBugReport_async(self, repoName: str, errorTitle: str, errorMessage: str) -> None:
+    async def _sendBugReport_async(self, repoName: str, errorTitle: str, errorMessage: str, shortErrorMessage: str) -> None:
         """Sends a bug report to the Github repository asynchronously.
         
         Args:
@@ -197,7 +213,7 @@ class BugReporter:
         # Send to Discord if applicable
         if self.handlers[repoName].useDiscord:
             discordBot = DiscordBot(self.handlers[repoName].botToken, self.handlers[repoName].channelId)
-            await discordBot.send_message(f"## {repoName}: {errorTitle}\n{errorMessage}", issueExists)
+            await discordBot.send_message(shortErrorMessage, issueExists)
 
         if (not issueExists):
             result = await client.execute_async(query=createIssue, variables=variables, headers=headers)
