@@ -8,3 +8,7 @@ src/pip-delete-this-directory.txt
 **/.vs
 **/.vscode
 **/.DS_Store
+
+pbrVenv
+src/lib
+.env
