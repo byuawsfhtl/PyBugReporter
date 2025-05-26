@@ -381,7 +381,7 @@ class BugReporter:
         headers = {"Authorization": f"Bearer {handler.githubKey}"}
 
         # query variables
-        repoId = cls._getRepoId(cls, handler)
+        repoId = asyncio.run(cls._getRepoId_async(cls, handler))
         bugLabel = "LA_kwDOJ3JPj88AAAABU1q15w"
         autoLabel = "LA_kwDOJ3JPj88AAAABU1q2DA"
         
@@ -414,7 +414,12 @@ class BugReporter:
             }
         }
 
-        issueExists = cls._checkIfIssueExists(cls, handler, errorTitle)
+        issueExists = asyncio.run(cls._checkIfIssueExists_async(cls, handler, errorTitle))
+
+        # Send to Discord if applicable
+        if cls.handlers[repoName].useDiscord:
+            discordBot = DiscordBot(cls.handlers[repoName].botToken, cls.handlers[repoName].channelId)
+            asyncio.run(discordBot.send_message(f"## {repoName}: {errorTitle}\n{errorMessage}", issueExists))
 
         if (issueExists == False):
             result = asyncio.run(client.execute_async(query=createIssue, variables=variables, headers=headers))
