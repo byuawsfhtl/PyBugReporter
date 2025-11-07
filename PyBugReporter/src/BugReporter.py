@@ -371,6 +371,17 @@ class BugReporter:
             errorTitle (str): the title of the error
             errorMessage (str): the error message
         """
+        asyncio.run(cls.manualBugReportAsync(repoName,errorTitle,errorMessage))
+
+    @classmethod
+    async def manualBugReportAsync(cls, repoName: str, errorTitle: str, errorMessage: str) -> None:
+        """Manually sends a bug report to the Github repository.
+
+        Args:
+            repoName (str): the name of the repo to report to
+            errorTitle (str): the title of the error
+            errorMessage (str): the error message
+        """
         if repoName not in cls.handlers:
             raise NotCreatedError(f"{repoName} has not been associated with a reporter")
         handler = cls.handlers[repoName]
@@ -381,7 +392,7 @@ class BugReporter:
         headers = {"Authorization": f"Bearer {handler.githubKey}"}
 
         # query variables
-        repoId = cls._getRepoId(cls, handler)
+        repoId = await cls._getRepoId_async(cls, handler)
         bugLabel = "LA_kwDOJ3JPj88AAAABU1q15w"
         autoLabel = "LA_kwDOJ3JPj88AAAABU1q2DA"
         
@@ -414,10 +425,15 @@ class BugReporter:
             }
         }
 
-        issueExists = cls._checkIfIssueExists(cls, handler, errorTitle)
+        issueExists = await cls._checkIfIssueExists_async(cls, handler, errorTitle)
+
+        # Send to Discord if applicable
+        if cls.handlers[repoName].useDiscord:
+            discordBot = DiscordBot(cls.handlers[repoName].botToken, cls.handlers[repoName].channelId)
+            await discordBot.send_message(f"## {repoName}: {errorTitle}\n{errorMessage}", issueExists)
 
         if (issueExists == False):
-            result = asyncio.run(client.execute_async(query=createIssue, variables=variables, headers=headers))
+            result = await client.execute_async(query=createIssue, variables=variables, headers=headers)
             print('\nThis error has been reported to the Tree Growth team.\n')
         else:
             print('\nOur team is already aware of this issue.\n')
