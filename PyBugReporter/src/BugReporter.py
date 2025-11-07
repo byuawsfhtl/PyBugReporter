@@ -374,7 +374,7 @@ class BugReporter:
         if repoName not in cls.handlers:
             raise NotCreatedError(f"{repoName} has not been associated with a reporter")
         handler = cls.handlers[repoName]
-        if handler.test == True:
+        if handler.test is True:
             print('This is a test run and no bug report will be sent.')
             return
         client = GraphqlClient(endpoint="https://api.github.com/graphql")
