@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import sys
 import traceback
 from functools import wraps
@@ -93,20 +94,38 @@ class BugReporter:
         Args:
             func (callable): the function to be decorated
         """
-        @wraps(func)
-        def wrapper(*args, **kwargs) -> None:
-            """Wrapper function that catches exceptions and sends a bug report to the github repository.
-
-            Args:
-                *args: the arguments for the function
-                **kwargs: the keyword arguments for the function
-            """
-            repoName = self.repoName
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                self._handleError(e, repoName, *args, **kwargs)
-        return wrapper
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def wrapper_async(*args, **kwargs) -> None:
+                """Wrapper function that catches exceptions and sends a bug report to the github repository.
+                Works for async functions.
+                
+                Args:
+                    *args: the arguments for the function
+                    **kwargs: the keyword arguments for the function
+                """
+                repoName = self.repoName
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    await self._handleError_async(e, repoName, *args, **kwargs)
+            return wrapper_async
+        else:
+            @wraps(func)
+            def wrapper(*args, **kwargs) -> None:
+                """Wrapper function that catches exceptions and sends a bug report to the github repository.
+                Works for synchronous functions.
+                
+                Args:
+                    *args: the arguments for the function
+                    **kwargs: the keyword arguments for the function
+                """
+                repoName = self.repoName
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    self._handleError(e, repoName, *args, **kwargs)
+            return wrapper
 
     def _handleError(self, e: Exception, repoName: str, *args, **kwargs) -> None:
         """Handles error by creating a bug report.
@@ -116,6 +135,46 @@ class BugReporter:
 
         Raises:
             e: the exception that was raised
+        """
+        title, description, shortDescription = self._prepare_bug_report(e, repoName, args, kwargs)
+
+        # Check if we need to send a bug report
+        if not self.handlers[repoName].test:
+            self._sendBugReport(repoName, title, description, shortDescription)
+
+        print(title)
+        print(description)
+        raise e
+    
+    async def _handleError_async(self, e: Exception, repoName: str, *args, **kwargs) -> None:
+        """Handles error by creating a bug report asynchronously.
+
+        Args:
+            e (Exception): the exception that was raised
+
+        Raises:
+            e: the exception that was raised
+        """
+        title, description, shortDescription = self._prepare_bug_report(e, repoName, args, kwargs)
+
+        # Check if we need to send a bug report
+        if not self.handlers[repoName].test:
+            await self._sendBugReport_async(repoName, title, description, shortDescription)
+
+        print(title)
+        print(description)
+        raise e
+
+
+    def _prepare_bug_report(self, e: Exception, repoName: str, *args, **kwargs) -> tuple[str,str,str]:
+        """Prepares all information needed to send the bug report.
+
+        Args:
+            e (Exception): the exception that was raised
+
+        Returns:
+            tuple[str,str,str]: The title, description, and short description of the error for the report.
+        
         """
         excType = type(e).__name__
         tb = traceback.extract_tb(sys.exc_info()[2])
@@ -144,15 +203,7 @@ class BugReporter:
             shortDescription = f"{start}{compress[:2000 - staticLength]}{end}"
 
         print(f"SHORT DESCRIPTION with length {len(shortDescription)}:\n{shortDescription}")
-        
-
-        # Check if we need to send a bug report
-        if not self.handlers[repoName].test:
-            self._sendBugReport(repoName, title, description, shortDescription)
-
-        print(title)
-        print(description)
-        raise e
+        return title,description,shortDescription
 
     def _sendBugReport(self, repoName: str, errorTitle: str, errorMessage: str, shortErrorMessage: str) -> None:
         """Sends a bug report to the Github repository.
