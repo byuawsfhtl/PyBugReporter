@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import sys
 import traceback
 from functools import wraps
@@ -93,20 +94,38 @@ class BugReporter:
         Args:
             func (callable): the function to be decorated
         """
-        @wraps(func)
-        def wrapper(*args, **kwargs) -> None:
-            """Wrapper function that catches exceptions and sends a bug report to the github repository.
-
-            Args:
-                *args: the arguments for the function
-                **kwargs: the keyword arguments for the function
-            """
-            repoName = self.repoName
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                self._handleError(e, repoName, *args, **kwargs)
-        return wrapper
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs) -> None:
+                """Wrapper function that catches exceptions and sends a bug report to the github repository.
+                Works for async functions.
+                
+                Args:
+                    *args: the arguments for the function
+                    **kwargs: the keyword arguments for the function
+                """
+                repoName = self.repoName
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    self._handleError(e, repoName, *args, **kwargs)
+            return async_wrapper
+        else:
+            @wraps(func)
+            def sync_wrapper(*args, **kwargs) -> None:
+                """Wrapper function that catches exceptions and sends a bug report to the github repository.
+                Works for synchronous functions.
+                
+                Args:
+                    *args: the arguments for the function
+                    **kwargs: the keyword arguments for the function
+                """
+                repoName = self.repoName
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    self._handleError(e, repoName, *args, **kwargs)
+            return sync_wrapper
 
     def _handleError(self, e: Exception, repoName: str, *args, **kwargs) -> None:
         """Handles error by creating a bug report.
