@@ -108,7 +108,7 @@ class BugReporter:
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
-                    self._handleError(e, repoName, *args, **kwargs)
+                    await self._handleError_async(e, repoName, *args, **kwargs)
             return async_wrapper
         else:
             @wraps(func)
@@ -136,6 +136,37 @@ class BugReporter:
         Raises:
             e: the exception that was raised
         """
+        title, description, shortDescription = self._prepare_bug_report(e, repoName, args, kwargs)
+
+        # Check if we need to send a bug report
+        if not self.handlers[repoName].test:
+            self._sendBugReport(repoName, title, description, shortDescription)
+
+        print(title)
+        print(description)
+        raise e
+    
+    async def _handleError_async(self, e: Exception, repoName: str, *args, **kwargs) -> None:
+        """Handles error by creating a bug report.
+
+        Args:
+            e (Exception): the exception that was raised
+
+        Raises:
+            e: the exception that was raised
+        """
+        title, description, shortDescription = self._prepare_bug_report(e, repoName, args, kwargs)
+
+        # Check if we need to send a bug report
+        if not self.handlers[repoName].test:
+            await self._sendBugReport_async(repoName, title, description, shortDescription)
+
+        print(title)
+        print(description)
+        raise e
+
+
+    def _prepare_bug_report(self, e, repoName, args, kwargs):
         excType = type(e).__name__
         tb = traceback.extract_tb(sys.exc_info()[2])
         functionName = tb[-1][2]
@@ -163,15 +194,7 @@ class BugReporter:
             shortDescription = f"{start}{compress[:2000 - staticLength]}{end}"
 
         print(f"SHORT DESCRIPTION with length {len(shortDescription)}:\n{shortDescription}")
-        
-
-        # Check if we need to send a bug report
-        if not self.handlers[repoName].test:
-            self._sendBugReport(repoName, title, description, shortDescription)
-
-        print(title)
-        print(description)
-        raise e
+        return title,description,shortDescription
 
     def _sendBugReport(self, repoName: str, errorTitle: str, errorMessage: str, shortErrorMessage: str) -> None:
         """Sends a bug report to the Github repository.
