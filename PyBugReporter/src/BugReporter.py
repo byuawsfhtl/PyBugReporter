@@ -96,7 +96,7 @@ class BugReporter:
         """
         if inspect.iscoroutinefunction(func):
             @wraps(func)
-            async def async_wrapper(*args, **kwargs) -> None:
+            async def wrapper_async(*args, **kwargs) -> None:
                 """Wrapper function that catches exceptions and sends a bug report to the github repository.
                 Works for async functions.
                 
@@ -109,10 +109,10 @@ class BugReporter:
                     return func(*args, **kwargs)
                 except Exception as e:
                     await self._handleError_async(e, repoName, *args, **kwargs)
-            return async_wrapper
+            return wrapper_async
         else:
             @wraps(func)
-            def sync_wrapper(*args, **kwargs) -> None:
+            def wrapper(*args, **kwargs) -> None:
                 """Wrapper function that catches exceptions and sends a bug report to the github repository.
                 Works for synchronous functions.
                 
@@ -125,7 +125,7 @@ class BugReporter:
                     return func(*args, **kwargs)
                 except Exception as e:
                     self._handleError(e, repoName, *args, **kwargs)
-            return sync_wrapper
+            return wrapper
 
     def _handleError(self, e: Exception, repoName: str, *args, **kwargs) -> None:
         """Handles error by creating a bug report.
@@ -147,7 +147,7 @@ class BugReporter:
         raise e
     
     async def _handleError_async(self, e: Exception, repoName: str, *args, **kwargs) -> None:
-        """Handles error by creating a bug report.
+        """Handles error by creating a bug report asynchronously.
 
         Args:
             e (Exception): the exception that was raised
@@ -166,7 +166,16 @@ class BugReporter:
         raise e
 
 
-    def _prepare_bug_report(self, e, repoName, args, kwargs):
+    def _prepare_bug_report(self, e: Exception, repoName: str, *args, **kwargs) -> tuple[str,str,str]:
+        """Prepares all information needed to send the bug report.
+
+        Args:
+            e (Exception): the exception that was raised
+
+        Returns:
+            tuple[str,str,str]: The title, description, and short description of the error for the report.
+        
+        """
         excType = type(e).__name__
         tb = traceback.extract_tb(sys.exc_info()[2])
         functionName = tb[-1][2]
