@@ -2,7 +2,7 @@ name: Deploy and Publish
 
 on:
   push:
-    branches: [prd, stg, dev]
+    branches: [prd, dev]
     paths-ignore: # Pushes that include only these changed files won't trigger actions
       - "**/README.md"
       - "**/.gitignore"
@@ -21,7 +21,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Update Version
-        uses: byuawsfhtl/UpdateVersion@v1.0.7
+        uses: byuawsfhtl/UpdateVersion@v1.0.9
         with:
           token: ${{ secrets.RLL_BOT_PERSONAL_ACCESS_TOKEN }}
           versionPath: ${{ github.workspace }}/PyBugReporter/_version.py
