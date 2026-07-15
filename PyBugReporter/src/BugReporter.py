@@ -264,7 +264,7 @@ class BugReporter:
         # Send to Discord if applicable
         if self.handlers[repoName].useDiscord:
             discordBot = DiscordBot(self.handlers[repoName].botToken, self.handlers[repoName].channelId)
-            await discordBot.send_message(shortErrorMessage, issueExists)
+            await discordBot.send_message(shortErrorMessage, issueExists, errorTitle)
 
         if (not issueExists):
             result = await client.execute_async(query=createIssue, variables=variables, headers=headers)
@@ -481,7 +481,7 @@ class BugReporter:
         # Send to Discord if applicable
         if cls.handlers[repoName].useDiscord:
             discordBot = DiscordBot(cls.handlers[repoName].botToken, cls.handlers[repoName].channelId)
-            await discordBot.send_message(f"## {repoName}: {errorTitle}\n{errorMessage}", issueExists)
+            await discordBot.send_message(f"## {repoName}: {errorTitle}\n{errorMessage}", issueExists, errorTitle)
 
         if (issueExists == False):
             result = await client.execute_async(query=createIssue, variables=variables, headers=headers)

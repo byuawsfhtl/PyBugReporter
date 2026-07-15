@@ -27,6 +27,7 @@ class DiscordBot(discord.Client):
         self.channelId = int(channelId)
         self._message = None
         self._alreadySent = False
+        self._title = None
         self._doneFuture = None
 
         intents = discord.Intents(emojis = True,
@@ -36,16 +37,18 @@ class DiscordBot(discord.Client):
                                   guilds = True)
         super().__init__(intents=intents)
 
-    async def send_message(self, message, alreadySent = False):
+    async def send_message(self, message, alreadySent = False, title = None):
         """
         Sends a message to the specified channel by setting the variables and starting the bot, then turning it off when finished.
 
         Args:
             message (str): The message to send.
             alreadySent (bool): Whether the message has already been sent.
+            title (str): The stable error title used to find the original message when reacting.
         """
         self._message = message
         self._alreadySent = alreadySent
+        self._title = title
         self._doneFuture = asyncio.get_running_loop().create_future()
         print("Starting bot...")
         # Start the bot as a background task
@@ -64,7 +67,7 @@ class DiscordBot(discord.Client):
                 print(f"Sent message to channel {self.channelId}")
             elif channel and self._alreadySent:
                 async for message in channel.history(limit=HISTORY_LIMIT):
-                    if message.content == self._message:
+                    if self._title and self._title in message.content:
                         await message.add_reaction(EMOJI)
                         break
             else:
