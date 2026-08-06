@@ -1,10 +1,15 @@
 import asyncio
 import sys
 import traceback
+from collections.abc import Callable
 from functools import wraps
+from typing import Any, TypeVar
+
 from PyBugReporter.src.DiscordBot import DiscordBot
 
 from python_graphql_client import GraphqlClient
+
+F = TypeVar("F", bound=Callable[..., Any])
 
 class NotCreatedError(Exception):
     """Raised when someone tries to report a bug to a repo that has not been set up as a reporting destination through setVars.
@@ -87,14 +92,14 @@ class BugReporter:
         """
         cls.handlers[repoName] = BugHandler(githubKey, repoName, orgName, test, useDiscord, botToken, channelId)
 
-    def __call__(self, func: callable) -> None:
+    def __call__(self, func: F) -> F:
         """Decorator that catches exceptions and sends a bug report to the github repository.
 
         Args:
-            func (callable): the function to be decorated
+            func: the function to be decorated
         """
         @wraps(func)
-        def wrapper(*args, **kwargs) -> None:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             """Wrapper function that catches exceptions and sends a bug report to the github repository.
 
             Args:
@@ -106,7 +111,7 @@ class BugReporter:
                 return func(*args, **kwargs)
             except Exception as e:
                 self._handleError(e, repoName, *args, **kwargs)
-        return wrapper
+        return wrapper  # type: ignore[return-value]
 
     def _handleError(self, e: Exception, repoName: str, *args, **kwargs) -> None:
         """Handles error by creating a bug report.
