@@ -7,6 +7,11 @@ from PyBugReporter.src.DiscordBot import DiscordBot
 
 from python_graphql_client import GraphqlClient
 
+BUG_LABEL_NAME: str = "bug"
+AUTO_LABEL_NAME: str = "auto generated"
+BUG_LABEL_COLOR: str = "d73a4a"
+AUTO_LABEL_COLOR: str = "ededed"
+
 class NotCreatedError(Exception):
     """Raised when someone tries to report a bug to a repo that has not been set up as a reporting destination through setVars.
     """
@@ -226,8 +231,8 @@ class BugReporter:
 
         # query variables
         repoId = await self._getRepoId_async(self.handlers[repoName])
-        bugLabel = "LA_kwDOJ3JPj88AAAABU1q15w"
-        autoLabel = "LA_kwDOJ3JPj88AAAABU1q2DA"
+        bugLabel = await self._get_or_create_label_id_async(self.handlers[repoName], repoId, BUG_LABEL_NAME, BUG_LABEL_COLOR)
+        autoLabel = await self._get_or_create_label_id_async(self.handlers[repoName], repoId, AUTO_LABEL_NAME, AUTO_LABEL_COLOR)
         
         # Create new issue
         createIssue = """
@@ -344,7 +349,7 @@ class BugReporter:
         headers = {"Authorization": f"Bearer {handler.githubKey}"}
 
         # query variables
-        autoLabel = "auto generated"
+        autoLabel = AUTO_LABEL_NAME
 
         # Query to return all issues with auto gen label
         findIssue = """
@@ -414,6 +419,64 @@ class BugReporter:
         return repoID['data']['repository']['id']
 
     @classmethod
+    async def _get_or_create_label_id_async(cls, handler: BugHandler, repo_id: str, label_name: str, color: str = "ededed") -> str:
+        """Gets a label ID from the repository, creating it if it does not exist.
+
+        Args:
+            handler (BugHandler): the object of reporting details
+            repo_id (str): the repository ID
+            label_name (str): the name of the label
+            color (str): the hex color code for creating the label
+
+        Returns:
+            str: the label ID
+        """
+        client = GraphqlClient(endpoint="https://api.github.com/graphql")
+        headers = {"Authorization": f"Bearer {handler.githubKey}"}
+
+        get_label_query = """
+            query getLabel($owner: String!, $name: String!, $labelName: String!) {
+                repository(owner: $owner, name: $name) {
+                    label(name: $labelName) {
+                        id
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "owner": handler.orgName,
+            "name": handler.repoName,
+            "labelName": label_name
+        }
+
+        result = await client.execute_async(query=get_label_query, variables=variables, headers=headers)
+        label_data = result.get("data", {}).get("repository", {}).get("label")
+        if label_data and label_data.get("id"):
+            return label_data["id"]
+
+        create_label_mutation = """
+            mutation createLabel($input: CreateLabelInput!) {
+                createLabel(input: $input) {
+                    label {
+                        id
+                    }
+                }
+            }
+        """
+
+        create_variables = {
+            "input": {
+                "repositoryId": repo_id,
+                "name": label_name,
+                "color": color
+            }
+        }
+
+        create_result = await client.execute_async(query=create_label_mutation, variables=create_variables, headers=headers)
+        return create_result["data"]["createLabel"]["label"]["id"]
+
+    @classmethod
     def manualBugReport(cls, repoName: str, errorTitle: str, errorMessage: str) -> None:
         """Manually sends a bug report to the Github repository.
 
@@ -444,8 +507,8 @@ class BugReporter:
 
         # query variables
         repoId = await cls._getRepoId_async(cls, handler)
-        bugLabel = "LA_kwDOJ3JPj88AAAABU1q15w"
-        autoLabel = "LA_kwDOJ3JPj88AAAABU1q2DA"
+        bugLabel = await cls._get_or_create_label_id_async(handler, repoId, BUG_LABEL_NAME, BUG_LABEL_COLOR)
+        autoLabel = await cls._get_or_create_label_id_async(handler, repoId, AUTO_LABEL_NAME, AUTO_LABEL_COLOR)
         
         # Create new issue
         createIssue = """
