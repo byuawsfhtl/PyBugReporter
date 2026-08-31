@@ -434,7 +434,7 @@ class BugReporter:
         client = GraphqlClient(endpoint="https://api.github.com/graphql")
         headers = {"Authorization": f"Bearer {handler.githubKey}"}
 
-        get_label_query = """
+        getLabelQuery = """
             query getLabel($owner: String!, $name: String!, $labelName: String!) {
                 repository(owner: $owner, name: $name) {
                     label(name: $labelName) {
@@ -450,12 +450,12 @@ class BugReporter:
             "labelName": label_name
         }
 
-        result = await client.execute_async(query=get_label_query, variables=variables, headers=headers)
-        label_data = result.get("data", {}).get("repository", {}).get("label")
-        if label_data and label_data.get("id"):
-            return label_data["id"]
+        result = await client.execute_async(query=getLabelQuery, variables=variables, headers=headers)
+        labelData = result.get("data", {}).get("repository", {}).get("label")
+        if labelData and labelData.get("id"):
+            return labelData["id"]
 
-        create_label_mutation = """
+        createLabelMutation = """
             mutation createLabel($input: CreateLabelInput!) {
                 createLabel(input: $input) {
                     label {
@@ -465,7 +465,7 @@ class BugReporter:
             }
         """
 
-        create_variables = {
+        createVariables = {
             "input": {
                 "repositoryId": repo_id,
                 "name": label_name,
@@ -473,8 +473,8 @@ class BugReporter:
             }
         }
 
-        create_result = await client.execute_async(query=create_label_mutation, variables=create_variables, headers=headers)
-        return create_result["data"]["createLabel"]["label"]["id"]
+        createResult = await client.execute_async(query=createLabelMutation, variables=createVariables, headers=headers)
+        return createResult["data"]["createLabel"]["label"]["id"]
 
     @classmethod
     def manualBugReport(cls, repoName: str, errorTitle: str, errorMessage: str) -> None:
