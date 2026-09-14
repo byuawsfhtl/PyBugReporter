@@ -111,7 +111,7 @@ class BugReporter:
                 """
                 repoName = self.repoName
                 try:
-                    return func(*args, **kwargs)
+                    return await func(*args, **kwargs)
                 except Exception as e:
                     await self._handleError_async(e, repoName, *args, **kwargs)
             return wrapper_async
