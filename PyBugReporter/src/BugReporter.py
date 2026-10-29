@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import sys
 import traceback
+import threading
 from functools import wraps
 from PyBugReporter.src.DiscordBot import DiscordBot
 
@@ -217,7 +218,7 @@ class BugReporter:
             errorTitle (str): the title of the error
             errorMessage (str): the error message
         """ 
-        asyncio.run(self._sendBugReport_async(repoName, errorTitle, errorMessage, shortErrorMessage))
+        threading.Thread(target=asyncio.run, args=(self._sendBugReport_async(repoName, errorTitle, errorMessage, shortErrorMessage),)).start()
    
     async def _sendBugReport_async(self, repoName: str, errorTitle: str, errorMessage: str, shortErrorMessage: str) -> None:
         """Sends a bug report to the Github repository asynchronously.
